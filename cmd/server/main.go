@@ -28,4 +28,6 @@ func main() {
 	if err := app.Start(startCtx); err != nil {
 		log.Fatalf("failed to start: %v", err)
 	}
+
+	app.Wait()
 }

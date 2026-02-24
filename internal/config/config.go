@@ -17,6 +17,7 @@ type Config struct {
 	TgAppHash     string
 
 	SessionPath string
+	ProxyURL    string
 }
 
 func Load(logger *zap.Logger) *Config {
@@ -27,7 +28,7 @@ func Load(logger *zap.Logger) *Config {
 
 	phoneNumber := os.Getenv("TG_PHONE_NUMBER")
 	if phoneNumber == "" {
-		logger.Fatal("No phone number provided")
+		logger.Warn("No phone number provided")
 	}
 
 	botToken := os.Getenv("TG_BOT_TOKEN")
@@ -60,6 +61,8 @@ func Load(logger *zap.Logger) *Config {
 
 	sessionFile := filepath.Join(sessionPath, "session.json")
 
+	proxyURL := os.Getenv("TG_PROXY_URL")
+
 	return &Config{
 		TgPhoneNumber: strings.TrimSpace(phoneNumber),
 		TgBotToken:    strings.TrimSpace(botToken),
@@ -67,5 +70,6 @@ func Load(logger *zap.Logger) *Config {
 		TgAppHash:     strings.TrimSpace(appHash),
 
 		SessionPath: sessionFile,
+		ProxyURL:    strings.TrimSpace(proxyURL),
 	}
 }

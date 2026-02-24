@@ -22,27 +22,25 @@ func (s *Service) LastMessages(ctx context.Context, username string, limit int) 
 	if err != nil {
 		return nil, err
 	}
-	var peer tg.InputPeerClass
-	for _, chat := range resolved.Chats {
-		if ch, ok := chat.(*tg.Channel); ok {
-			peer = &tg.InputPeerChannel{
-				ChannelID:  ch.ID,
-				AccessHash: ch.AccessHash,
-			}
-			break
-		}
-	}
-	if peer == nil {
+	if len(resolved.Chats) == 0 {
 		return nil, errors.New("channel not found")
 	}
-	// Fetch history
-	history, err := api.MessagesGetHistory(ctx, &tg.MessagesGetHistoryRequest{
-		Peer:  peer,
-		Limit: limit,
+	channel, ok := resolved.Chats[0].(*tg.Channel)
+	if !ok {
+		return nil, errors.New("resolved peer is not a channel")
+	}
+
+	history, err := s.client.API().MessagesGetHistory(ctx, &tg.MessagesGetHistoryRequest{
+		Peer: &tg.InputPeerChannel{
+			ChannelID:  channel.ID,
+			AccessHash: channel.AccessHash,
+		},
+		Limit: 100,
 	})
 	if err != nil {
 		return nil, err
 	}
+
 	// Extract messages
 	var msgs []tg.MessageClass
 	switch h := history.(type) {
