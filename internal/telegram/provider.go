@@ -8,12 +8,14 @@ import (
 	"time"
 
 	"github.com/gotd/contrib/bg"
+	"github.com/gotd/contrib/middleware/ratelimit"
 	"github.com/gotd/td/session"
 	"github.com/gotd/td/telegram"
 	"github.com/gotd/td/telegram/dcs"
 	"go.uber.org/fx"
 	"go.uber.org/zap"
 	"golang.org/x/net/proxy"
+	"golang.org/x/time/rate"
 )
 
 func NewTelegramClient(cfg *config.Config, logger *zap.Logger) *telegram.Client {
@@ -22,14 +24,16 @@ func NewTelegramClient(cfg *config.Config, logger *zap.Logger) *telegram.Client 
 		DCList:           dcs.Prod(),
 		Logger:           logger,
 		SessionStorage:   &session.FileStorage{Path: cfg.SessionPath},
-		DialTimeout:      20 * time.Second,
-		ExchangeTimeout:  20 * time.Second,
-		MigrationTimeout: 20 * time.Second,
+		DialTimeout:      config.DialTimeout,
+		ExchangeTimeout:  config.ExchangeTimeout,
+		MigrationTimeout: config.MigrationTimeout,
+
+		Middlewares: []telegram.Middleware{
+			ratelimit.New(rate.Every(time.Millisecond*500), 5),
+		},
 	}
 
 	// TODO: Add pebble and bbolt https://github.com/gotd/td/blob/6f8e63c553210a2901f5c3586f6b88d6524fe9b3/examples/userbot/main.go#L106
-	// TODO: Add ratelimit https://github.com/gotd/td/blob/6f8e63c553210a2901f5c3586f6b88d6524fe9b3/examples/userbot/main.go#L149
-	// TODO: Cleanup contexts over the codebase and organize timeout values
 	if cfg.ProxyURL != "" {
 		proxyURL, err := url.Parse(cfg.ProxyURL)
 		if err != nil {

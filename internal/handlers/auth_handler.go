@@ -3,7 +3,7 @@ package handlers
 import (
 	"context"
 	"net/http"
-	"time"
+	"tgss/internal/config"
 
 	"tgss/internal/telegram"
 
@@ -39,7 +39,7 @@ func (h *AuthHandler) SendCode(c *gin.Context) {
 		return
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), config.AuthOperationTimeout)
 	defer cancel()
 
 	if err := h.tg.SendCode(ctx, req.Phone); err != nil {
@@ -57,7 +57,7 @@ func (h *AuthHandler) Verify(c *gin.Context) {
 		return
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), config.AuthOperationTimeout)
 	defer cancel()
 
 	if err := h.tg.VerifyCode(ctx, req.Code); err != nil {
@@ -75,7 +75,7 @@ func (h *AuthHandler) Password(c *gin.Context) {
 		return
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), config.AuthOperationTimeout)
 	defer cancel()
 
 	if err := h.tg.Password(ctx, req.Password); err != nil {

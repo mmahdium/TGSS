@@ -3,9 +3,9 @@ package handlers
 import (
 	"context"
 	"strconv"
+	"tgss/internal/config"
 	"tgss/internal/rss"
 	"tgss/internal/telegram"
-	"time"
 
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
@@ -41,7 +41,7 @@ func (ch *ChannelHandler) GetMessagesJson(c *gin.Context) {
 		}
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), config.MessageOperationTimeout)
 	defer cancel()
 
 	messages, err := ch.tgService.LastMessages(ctx, channelId, limit)
@@ -55,7 +55,7 @@ func (ch *ChannelHandler) GetMessagesJson(c *gin.Context) {
 }
 
 func (ch *ChannelHandler) GetMessagesRSS(c *gin.Context) {
-	authStatCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	authStatCtx, cancel := context.WithTimeout(context.Background(), config.AuthStatusTimeout)
 	defer cancel()
 
 	authStat, err := ch.tgService.AuthStatus(authStatCtx)
@@ -76,7 +76,7 @@ func (ch *ChannelHandler) GetMessagesRSS(c *gin.Context) {
 		}
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), config.MessageOperationTimeout)
 	defer cancel()
 
 	messages, err := ch.tgService.LastMessages(ctx, channelId, limit)
