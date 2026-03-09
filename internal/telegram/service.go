@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"sync"
+	"time"
 
 	"github.com/gotd/td/telegram"
 	"github.com/gotd/td/telegram/auth"
@@ -15,24 +16,48 @@ type Service struct {
 	client *telegram.Client
 	log    *zap.Logger
 
-	mu            sync.Mutex
-	phone         string
-	phoneCodeHash string
+	mu              sync.Mutex
+	phone           string
+	phoneCodeHash   string
+	authStatus      bool
+	authCheckedAt   time.Time
+	authTTL         time.Duration
 }
 
 func NewService(client *telegram.Client, logger *zap.Logger) *Service {
 	return &Service{
-		client: client,
-		log:    logger,
+		client:  client,
+		log:     logger,
+		authTTL: 10 * time.Minute,
 	}
 }
 
 func (s *Service) AuthStatus(ctx context.Context) (bool, error) {
-	_, err := s.client.Auth().Status(ctx)
-	if err != nil {
-		return false, err
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	if time.Since(s.authCheckedAt) < s.authTTL {
+		return s.authStatus, nil
 	}
-	return true, nil
+
+	status, err := s.client.Auth().Status(ctx)
+	if err != nil {
+		s.authStatus = false
+	} else {
+		s.authStatus = status.Authorized
+	}
+	s.authCheckedAt = time.Now()
+
+	return s.authStatus, err
+}
+
+func (s *Service) InitAuthStatus(ctx context.Context) error {
+	status, err := s.AuthStatus(ctx)
+	if err != nil {
+		return err
+	}
+	s.log.Info("Telegram auth status initialized", zap.Bool("authenticated", status))
+	return nil
 }
 
 func (s *Service) SendCode(ctx context.Context, phone string) error {

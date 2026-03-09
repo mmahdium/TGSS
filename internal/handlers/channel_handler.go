@@ -55,6 +55,14 @@ func (ch *ChannelHandler) GetMessagesJson(c *gin.Context) {
 }
 
 func (ch *ChannelHandler) GetMessagesRSS(c *gin.Context) {
+	authStatCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	authStat, err := ch.tgService.AuthStatus(authStatCtx)
+	if err != nil || !authStat {
+		c.JSON(500, gin.H{"error": "Telegram client is not initialized"})
+	}
+
 	channelId := c.Param("id")
 	limit := 5
 

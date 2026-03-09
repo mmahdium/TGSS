@@ -52,7 +52,7 @@ func NewTelegramClient(cfg *config.Config, logger *zap.Logger) *telegram.Client 
 	return telegram.NewClient(cfg.TgAppId, cfg.TgAppHash, opts)
 }
 
-func RunClient(lc fx.Lifecycle, client *telegram.Client, logger *zap.Logger) {
+func RunClient(lc fx.Lifecycle, client *telegram.Client, service *Service, logger *zap.Logger) {
 	var stop func() error
 
 	lc.Append(fx.Hook{
@@ -64,6 +64,11 @@ func RunClient(lc fx.Lifecycle, client *telegram.Client, logger *zap.Logger) {
 
 			stop = s
 			logger.Info("telegram client connected")
+
+			if err := service.InitAuthStatus(ctx); err != nil {
+				logger.Warn("Failed to initialize Telegram auth status", zap.Error(err))
+			}
+
 			return nil
 		},
 		OnStop: func(ctx context.Context) error {
