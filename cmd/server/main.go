@@ -4,6 +4,7 @@ import (
 	"tgss/internal/config"
 	"tgss/internal/handlers"
 	"tgss/internal/infra"
+	"tgss/internal/rss"
 	"tgss/internal/server"
 	"tgss/internal/telegram"
 
@@ -19,6 +20,8 @@ func main() {
 
 			handlers.NewChannelHandler,
 			handlers.NewAuthHandler,
+
+			rss.NewRSSGenerator,
 		),
 		telegram.Module,
 		fx.Invoke(server.RegisterRoutes),

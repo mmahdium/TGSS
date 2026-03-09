@@ -41,7 +41,8 @@ func RegisterRoutes(params RouterParams) {
 				})
 			})
 
-			params.GinEngine.GET("/channel/:id", params.ChannelHandler.GetLatestMessages)
+			// params.GinEngine.GET("/channel/:id/json", params.ChannelHandler.GetMessagesJson)
+			params.GinEngine.GET("/channel/:id", params.ChannelHandler.GetMessagesRSS)
 
 			params.GinEngine.POST("/auth/send-code", params.AuthHandler.SendCode)
 			params.GinEngine.POST("/auth/verify", params.AuthHandler.Verify)
