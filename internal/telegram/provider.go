@@ -5,6 +5,7 @@ import (
 	"net"
 	"net/url"
 	"tgss/internal/config"
+	"time"
 
 	"github.com/gotd/td/session"
 	"github.com/gotd/td/telegram"
@@ -20,6 +21,9 @@ func NewTelegramClient(cfg *config.Config, logger *zap.Logger) *telegram.Client 
 		DCList:         dcs.Prod(),
 		Logger:         logger,
 		SessionStorage: &session.FileStorage{Path: cfg.SessionPath},
+		DialTimeout: 20*time.Second,
+		ExchangeTimeout: 20*time.Second,
+		MigrationTimeout: 20*time.Second,
 	}
 
 	if cfg.ProxyURL != "" {

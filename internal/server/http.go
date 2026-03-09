@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"tgss/internal/handlers"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
@@ -15,15 +16,17 @@ type RouterParams struct {
 	Lifecycle fx.Lifecycle
 	GinEngine *gin.Engine
 	Logger    *zap.Logger
+
+	ChannelHandler *handlers.ChannelHandler
 }
 
 func NewGin() *gin.Engine {
 	g := gin.New()
 	g.Use(gin.Recovery())
 	g.Use(cors.New(cors.Config{
-		AllowAllOrigins:  true,
-		AllowMethods:     []string{"GET"},
-		AllowHeaders:     []string{"Origin", "Content-Type"},
+		AllowAllOrigins: true,
+		AllowMethods:    []string{"GET"},
+		AllowHeaders:    []string{"Origin", "Content-Type"},
 	}))
 	return g
 }
@@ -36,8 +39,11 @@ func RegisterRoutes(params RouterParams) {
 					"message": "pong",
 				})
 			})
+
+			params.GinEngine.GET("/channel/:id", params.ChannelHandler.GetLatestMessages)
+
 			params.Logger.Info("Starting server")
-			go params.GinEngine.Run(":8080")
+			go params.GinEngine.Run(":3000")
 			params.Logger.Info("Server is running on port 8080")
 			return nil
 		},

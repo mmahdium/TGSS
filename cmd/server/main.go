@@ -1,13 +1,11 @@
 package main
 
 import (
-	"context"
-	"log"
 	"tgss/internal/config"
+	"tgss/internal/handlers"
 	"tgss/internal/infra"
 	"tgss/internal/server"
 	"tgss/internal/telegram"
-	"time"
 
 	"go.uber.org/fx"
 )
@@ -18,16 +16,13 @@ func main() {
 			infra.NewLogger,
 			config.Load,
 			server.NewGin,
+
+			handlers.NewChannelHandler,
 		),
 		telegram.Module,
+		fx.Invoke(server.RegisterRoutes),
 		fx.Logger(infra.NewFXLogger()),
 	)
 
-	startCtx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
-	defer cancel()
-	if err := app.Start(startCtx); err != nil {
-		log.Fatalf("failed to start: %v", err)
-	}
-
-	app.Wait()
+	app.Run()
 }
