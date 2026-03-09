@@ -18,6 +18,7 @@ type RouterParams struct {
 	Logger    *zap.Logger
 
 	ChannelHandler *handlers.ChannelHandler
+	AuthHandler    *handlers.AuthHandler
 }
 
 func NewGin() *gin.Engine {
@@ -41,6 +42,10 @@ func RegisterRoutes(params RouterParams) {
 			})
 
 			params.GinEngine.GET("/channel/:id", params.ChannelHandler.GetLatestMessages)
+
+			params.GinEngine.POST("/auth/send-code", params.AuthHandler.SendCode)
+			params.GinEngine.POST("/auth/verify", params.AuthHandler.Verify)
+			params.GinEngine.POST("/auth/password", params.AuthHandler.Password)
 
 			params.Logger.Info("Starting server")
 			go params.GinEngine.Run(":3000")

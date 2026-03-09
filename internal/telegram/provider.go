@@ -7,6 +7,7 @@ import (
 	"tgss/internal/config"
 	"time"
 
+	"github.com/gotd/contrib/bg"
 	"github.com/gotd/td/session"
 	"github.com/gotd/td/telegram"
 	"github.com/gotd/td/telegram/dcs"
@@ -17,15 +18,18 @@ import (
 
 func NewTelegramClient(cfg *config.Config, logger *zap.Logger) *telegram.Client {
 	opts := telegram.Options{
-		DC:             2,
-		DCList:         dcs.Prod(),
-		Logger:         logger,
-		SessionStorage: &session.FileStorage{Path: cfg.SessionPath},
-		DialTimeout: 20*time.Second,
-		ExchangeTimeout: 20*time.Second,
-		MigrationTimeout: 20*time.Second,
+		DC:               2,
+		DCList:           dcs.Prod(),
+		Logger:           logger,
+		SessionStorage:   &session.FileStorage{Path: cfg.SessionPath},
+		DialTimeout:      20 * time.Second,
+		ExchangeTimeout:  20 * time.Second,
+		MigrationTimeout: 20 * time.Second,
 	}
 
+	// TODO: Add pebble and bbolt https://github.com/gotd/td/blob/6f8e63c553210a2901f5c3586f6b88d6524fe9b3/examples/userbot/main.go#L106
+	// TODO: Add ratelimit https://github.com/gotd/td/blob/6f8e63c553210a2901f5c3586f6b88d6524fe9b3/examples/userbot/main.go#L149
+	// TODO: Cleanup contexts over the codebase and organize timeout values
 	if cfg.ProxyURL != "" {
 		proxyURL, err := url.Parse(cfg.ProxyURL)
 		if err != nil {
@@ -48,42 +52,25 @@ func NewTelegramClient(cfg *config.Config, logger *zap.Logger) *telegram.Client 
 	return telegram.NewClient(cfg.TgAppId, cfg.TgAppHash, opts)
 }
 
-func NewService(client *telegram.Client, logger *zap.Logger) *Service {
-	return &Service{client: client, log: logger}
-}
+func RunClient(lc fx.Lifecycle, client *telegram.Client, logger *zap.Logger) {
+	var stop func() error
 
-func RunClient(lc fx.Lifecycle, client *telegram.Client, cfg *config.Config, logger *zap.Logger) {
-	ctx, cancel := context.WithCancel(context.Background())
 	lc.Append(fx.Hook{
-		OnStart: func(context.Context) error {
-			errCh := make(chan error, 1)
-			readyCh := make(chan struct{})
-
-			go func() {
-				if err := client.Run(ctx, func(ctx context.Context) error {
-					if _, err := client.Auth().Bot(ctx, cfg.TgBotToken); err != nil {
-						return err
-					}
-					logger.Info("Telegram bot authenticated and running")
-					close(readyCh)
-					<-ctx.Done()
-					return nil
-				}); err != nil {
-					errCh <- err
-				}
-			}()
-
-			select {
-			case <-readyCh:
-				return nil
-			case err := <-errCh:
+		OnStart: func(ctx context.Context) error {
+			s, err := bg.Connect(client)
+			if err != nil {
 				return err
-			case <-ctx.Done():
-				return ctx.Err()
 			}
+
+			stop = s
+			logger.Info("telegram client connected")
+			return nil
 		},
-		OnStop: func(context.Context) error {
-			cancel()
+		OnStop: func(ctx context.Context) error {
+			if stop != nil {
+				logger.Info("telegram client stopping")
+				return stop()
+			}
 			return nil
 		},
 	})

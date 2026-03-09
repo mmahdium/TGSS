@@ -12,7 +12,6 @@ import (
 
 type Config struct {
 	TgPhoneNumber string
-	TgBotToken    string // Only for getting authenticated without phone number
 	TgAppId       int
 	TgAppHash     string
 
@@ -21,19 +20,10 @@ type Config struct {
 }
 
 func Load(logger *zap.Logger) *Config {
+	// TODO: get app port and host
 	err := godotenv.Load()
 	if err != nil {
 		logger.Warn("Error loading .env file - Using environment variables instead")
-	}
-
-	phoneNumber := os.Getenv("TG_PHONE_NUMBER")
-	if phoneNumber == "" {
-		logger.Warn("No phone number provided")
-	}
-
-	botToken := os.Getenv("TG_BOT_TOKEN")
-	if botToken == "" {
-		logger.Fatal("No bot token provided")
 	}
 
 	appId := os.Getenv("TG_APP_ID")
@@ -64,8 +54,6 @@ func Load(logger *zap.Logger) *Config {
 	proxyURL := os.Getenv("TG_PROXY_URL")
 
 	return &Config{
-		TgPhoneNumber: strings.TrimSpace(phoneNumber),
-		TgBotToken:    strings.TrimSpace(botToken),
 		TgAppId:       func() int { i, _ := strconv.Atoi(appId); return i }(),
 		TgAppHash:     strings.TrimSpace(appHash),
 

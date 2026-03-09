@@ -18,6 +18,7 @@ func main() {
 			server.NewGin,
 
 			handlers.NewChannelHandler,
+			handlers.NewAuthHandler,
 		),
 		telegram.Module,
 		fx.Invoke(server.RegisterRoutes),
