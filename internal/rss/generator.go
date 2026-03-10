@@ -55,13 +55,12 @@ func (r *RSSGenerator) GenerateFeed(items []tg.MessageClass, channelId string) *
 	nowStr := time.Now().Format("Mon, 02 Jan 2006 15:04 MST")
 
 	rssChannel := &RSSChannel{
-		Title: "Recent posts from @" + channelId,
-		Link:  "https://t.me/" + channelId,
-		Description: "This feed contains the most recent posts from the Telegram channel @" + channelId + ". " +
-			"Stay updated with the latest news and updates from the channel.",
+		Title:         "Recent posts from @" + channelId,
+		Link:          "https://t.me/" + channelId,
+		Description:   "Recent posts from the Telegram channel @" + channelId + ".",
 		PubDate:       nowStr,
 		LastBuildDate: nowStr,
-		Generator:     "Telegram RSS Generator",
+		Generator:     "TGSS",
 	}
 
 	errorCount := 0

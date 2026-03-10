@@ -2,7 +2,9 @@ package server
 
 import (
 	"context"
+	"tgss/internal/config"
 	"tgss/internal/handlers"
+	"tgss/internal/telegram"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
@@ -16,6 +18,7 @@ type RouterParams struct {
 	Lifecycle fx.Lifecycle
 	GinEngine *gin.Engine
 	Logger    *zap.Logger
+	TgService *telegram.Service
 
 	ChannelHandler *handlers.ChannelHandler
 	AuthHandler    *handlers.AuthHandler
@@ -44,9 +47,24 @@ func RegisterRoutes(params RouterParams) {
 			// params.GinEngine.GET("/channel/:id/json", params.ChannelHandler.GetMessagesJson)
 			params.GinEngine.GET("/channel/:id", params.ChannelHandler.GetMessagesRSS)
 
-			params.GinEngine.POST("/auth/send-code", params.AuthHandler.SendCode)
-			params.GinEngine.POST("/auth/verify", params.AuthHandler.Verify)
-			params.GinEngine.POST("/auth/password", params.AuthHandler.Password)
+			// TODO: improve accurecy in rss channel fields
+			// TODO: add ui with templates under /setup with fetch
+			// TODO: add gin level cache (look for higher limit)
+			// TODO: add gin level ip ratelimit
+			// TODO: image endpoint + hash and expiry
+			authStatCtx, cancel := context.WithTimeout(context.Background(), config.AuthStatusTimeout)
+			defer cancel()
+
+			authStat, err := params.TgService.AuthStatus(authStatCtx)
+			if err != nil {
+				params.Logger.Fatal("Unable to get auth state from telegram", zap.Error(err))
+			}
+			if !authStat {
+				params.Logger.Warn("You have not logged in to telegram, log in to use the api")
+				params.GinEngine.POST("/auth/send-code", params.AuthHandler.SendCode)
+				params.GinEngine.POST("/auth/verify", params.AuthHandler.Verify)
+				params.GinEngine.POST("/auth/password", params.AuthHandler.Password)
+			}
 
 			params.Logger.Info("Starting server")
 			go params.GinEngine.Run(":3000")

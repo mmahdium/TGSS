@@ -27,6 +27,7 @@ func NewTelegramClient(cfg *config.Config, logger *zap.Logger) *telegram.Client 
 		DialTimeout:      config.DialTimeout,
 		ExchangeTimeout:  config.ExchangeTimeout,
 		MigrationTimeout: config.MigrationTimeout,
+		Device:           telegram.DeviceConfig{DeviceModel: "TGSS"},
 
 		Middlewares: []telegram.Middleware{
 			ratelimit.New(rate.Every(time.Millisecond*500), 5),

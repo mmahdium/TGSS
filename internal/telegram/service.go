@@ -14,20 +14,20 @@ import (
 
 type Service struct {
 	client *telegram.Client
-	log    *zap.Logger
+	logger *zap.Logger
 
-	mu              sync.Mutex
-	phone           string
-	phoneCodeHash   string
-	authStatus      bool
-	authCheckedAt   time.Time
-	authTTL         time.Duration
+	mu            sync.Mutex
+	phone         string
+	phoneCodeHash string
+	authStatus    bool
+	authCheckedAt time.Time
+	authTTL       time.Duration
 }
 
 func NewService(client *telegram.Client, logger *zap.Logger) *Service {
 	return &Service{
 		client:  client,
-		log:     logger,
+		logger:  logger,
 		authTTL: 10 * time.Minute,
 	}
 }
@@ -37,6 +37,7 @@ func (s *Service) AuthStatus(ctx context.Context) (bool, error) {
 	defer s.mu.Unlock()
 
 	if time.Since(s.authCheckedAt) < s.authTTL {
+		s.logger.Debug("returned auth state from cache")
 		return s.authStatus, nil
 	}
 
@@ -56,7 +57,7 @@ func (s *Service) InitAuthStatus(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	s.log.Info("Telegram auth status initialized", zap.Bool("authenticated", status))
+	s.logger.Info("Telegram auth status initialized", zap.Bool("authenticated", status))
 	return nil
 }
 
@@ -84,6 +85,10 @@ func (s *Service) VerifyCode(ctx context.Context, code string) error {
 	}
 
 	_, err := s.client.Auth().SignIn(ctx, s.phone, code, s.phoneCodeHash)
+	// TODO: get auth response and take action based on it
+	s.authStatus = err == nil
+	s.authCheckedAt = time.Now()
+
 	return err
 }
 

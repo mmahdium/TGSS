@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"context"
+	"encoding/xml"
 	"strconv"
 	"tgss/internal/config"
 	"tgss/internal/rss"
@@ -61,6 +62,7 @@ func (ch *ChannelHandler) GetMessagesRSS(c *gin.Context) {
 	authStat, err := ch.tgService.AuthStatus(authStatCtx)
 	if err != nil || !authStat {
 		c.JSON(500, gin.H{"error": "Telegram client is not initialized"})
+		return
 	}
 
 	channelId := c.Param("id")
@@ -88,5 +90,15 @@ func (ch *ChannelHandler) GetMessagesRSS(c *gin.Context) {
 
 	rssFeed := ch.rss.GenerateFeed(messages, channelId)
 
-	c.XML(200, rssFeed)
+	c.Header("Content-Type", "application/rss+xml; charset=utf-8")
+	c.Header("X-Content-Type-Options", "nosniff")
+
+	parsedFeed, err := xml.MarshalIndent(rssFeed, " ", "  ")
+	if err != nil {
+		c.JSON(500, gin.H{"error": "Unable to parse XML"})
+		return
+	}
+
+	c.String(200, xml.Header+string(parsedFeed))
+
 }
