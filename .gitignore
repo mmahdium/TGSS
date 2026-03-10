@@ -1,3 +1,4 @@
 .env
 .vscode/launch.json
 main
+data/

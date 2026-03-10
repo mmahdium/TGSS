@@ -44,13 +44,12 @@ func RegisterRoutes(params RouterParams) {
 				})
 			})
 
-			// params.GinEngine.GET("/channel/:id/json", params.ChannelHandler.GetMessagesJson)
-			params.GinEngine.GET("/channel/:id", params.ChannelHandler.GetMessagesRSS)
+			// params.GinEngine.GET("/feed/:id/json", params.ChannelHandler.GetMessagesJson)
+			params.GinEngine.GET("/feed/:id", RateLimit(), params.ChannelHandler.GetMessagesRSS)
 
 			// TODO: improve accurecy in rss channel fields
 			// TODO: add ui with templates under /setup with fetch
 			// TODO: add gin level cache (look for higher limit)
-			// TODO: add gin level ip ratelimit
 			// TODO: image endpoint + hash and expiry
 			authStatCtx, cancel := context.WithTimeout(context.Background(), config.AuthStatusTimeout)
 			defer cancel()
