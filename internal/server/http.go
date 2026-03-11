@@ -52,7 +52,6 @@ func RegisterRoutes(params RouterParams) {
 
 			// TODO: improve accurecy in rss channel fields
 			// TODO: add ui with templates under /setup with fetch
-			// TODO: add gin level cache (look for higher limit)
 			// TODO: image endpoint + hash and expiry
 			authStatCtx, cancel := context.WithTimeout(context.Background(), config.AuthStatusTimeout)
 			authStat, err := params.TgService.AuthStatus(authStatCtx)

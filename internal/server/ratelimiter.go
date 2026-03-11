@@ -54,7 +54,7 @@ func (r *RateLimiter) CleanupRateLimiter() {
 
 }
 
-func RegisterCleanup(lc fx.Lifecycle, logger *zap.Logger, r *RateLimiter) {
+func RegisterRateLimiterCleanup(lc fx.Lifecycle, logger *zap.Logger, r *RateLimiter) {
 	var ticker *time.Ticker
 	var stopChan chan struct{}
 

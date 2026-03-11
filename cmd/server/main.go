@@ -23,10 +23,12 @@ func main() {
 			handlers.NewAuthHandler,
 
 			rss.NewRSSGenerator,
+			rss.NewFeedCache,
 		),
 		telegram.Module,
 		fx.Invoke(server.RegisterRoutes),
-		fx.Invoke((server.RegisterCleanup)),
+		fx.Invoke((server.RegisterRateLimiterCleanup)),
+		fx.Invoke(rss.RegisterFeedCacheCleanup),
 		fx.Logger(infra.NewFXLogger()),
 	)
 

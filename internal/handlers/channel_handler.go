@@ -13,18 +13,23 @@ import (
 )
 
 type ChannelHandler struct {
-	logger    *zap.Logger
-	tgService *telegram.Service
-	rss       *rss.RSSGenerator
+	logger       *zap.Logger
+	tgService    *telegram.Service
+	rssGenerator *rss.RSSGenerator
+	rssFeedCache *rss.FeedCache
 }
 
 func NewChannelHandler(
 	tgService *telegram.Service,
 	logger *zap.Logger,
+	rssGenerator *rss.RSSGenerator,
+	rssFeedCache *rss.FeedCache,
 ) *ChannelHandler {
 	return &ChannelHandler{
-		logger:    logger,
-		tgService: tgService,
+		logger:       logger,
+		tgService:    tgService,
+		rssGenerator: rssGenerator,
+		rssFeedCache: rssFeedCache,
 	}
 }
 
@@ -80,15 +85,23 @@ func (ch *ChannelHandler) GetMessagesRSS(c *gin.Context) {
 
 	ctx, cancel := context.WithTimeout(context.Background(), config.MessageOperationTimeout)
 	defer cancel()
+	var rssFeed *rss.RSSFeed
+	rssFeed = ch.rssFeedCache.GetFeedFromFeedCache(channelId, limit)
 
-	messages, err := ch.tgService.LastMessages(ctx, channelId, limit)
-	if err != nil {
-		ch.logger.Error("Error getting channel messages:", zap.Error(err))
-		c.JSON(500, gin.H{"error": "Unable to get channel messages"})
-		return
+	if rssFeed == nil {
+		messages, err := ch.tgService.LastMessages(ctx, channelId, limit)
+		if err != nil {
+			ch.logger.Error("Error getting channel messages:", zap.Error(err))
+			c.JSON(500, gin.H{"error": "Unable to get channel messages"})
+			return
+		}
+
+		rssFeed = ch.rssGenerator.GenerateFeed(messages, channelId)
+		ch.rssFeedCache.SetFeedToFeedCache(channelId, rssFeed)
+		c.Header("X-Cache-Status", "MISS")
+	} else {
+		c.Header("X-Cache-Status", "HIT")
 	}
-
-	rssFeed := ch.rss.GenerateFeed(messages, channelId)
 
 	c.Header("Content-Type", "application/rss+xml; charset=utf-8")
 	c.Header("X-Content-Type-Options", "nosniff")
