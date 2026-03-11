@@ -17,6 +17,7 @@ func main() {
 			infra.NewLogger,
 			config.Load,
 			server.NewGin,
+			server.NewRateLimiter,
 
 			handlers.NewChannelHandler,
 			handlers.NewAuthHandler,
@@ -25,6 +26,7 @@ func main() {
 		),
 		telegram.Module,
 		fx.Invoke(server.RegisterRoutes),
+		fx.Invoke((server.RegisterCleanup)),
 		fx.Logger(infra.NewFXLogger()),
 	)
 

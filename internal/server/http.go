@@ -16,11 +16,12 @@ import (
 type RouterParams struct {
 	fx.In
 
-	Lifecycle fx.Lifecycle
-	GinEngine *gin.Engine
-	Logger    *zap.Logger
-	TgService *telegram.Service
-	Config    *config.Config
+	Lifecycle   fx.Lifecycle
+	GinEngine   *gin.Engine
+	Logger      *zap.Logger
+	TgService   *telegram.Service
+	Config      *config.Config
+	RateLimiter *RateLimiter
 
 	ChannelHandler *handlers.ChannelHandler
 	AuthHandler    *handlers.AuthHandler
@@ -47,7 +48,7 @@ func RegisterRoutes(params RouterParams) {
 			})
 
 			// params.GinEngine.GET("/feed/:id/json", params.ChannelHandler.GetMessagesJson)
-			params.GinEngine.GET("/feed/:id", RateLimit(), params.ChannelHandler.GetMessagesRSS)
+			params.GinEngine.GET("/feed/:id", params.RateLimiter.RateLimit(), params.ChannelHandler.GetMessagesRSS)
 
 			// TODO: improve accurecy in rss channel fields
 			// TODO: add ui with templates under /setup with fetch
