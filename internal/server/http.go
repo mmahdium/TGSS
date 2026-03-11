@@ -55,9 +55,9 @@ func RegisterRoutes(params RouterParams) {
 			// TODO: add gin level cache (look for higher limit)
 			// TODO: image endpoint + hash and expiry
 			authStatCtx, cancel := context.WithTimeout(context.Background(), config.AuthStatusTimeout)
-			defer cancel()
-
 			authStat, err := params.TgService.AuthStatus(authStatCtx)
+			cancel()
+
 			if err != nil {
 				params.Logger.Fatal("Unable to get auth state from telegram", zap.Error(err))
 			}

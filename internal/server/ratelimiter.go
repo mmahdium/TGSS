@@ -55,21 +55,36 @@ func (r *RateLimiter) CleanupRateLimiter() {
 }
 
 func RegisterCleanup(lc fx.Lifecycle, logger *zap.Logger, r *RateLimiter) {
+	var ticker *time.Ticker
+	var stopChan chan struct{}
+
 	lc.Append(fx.Hook{
 		OnStart: func(ctx context.Context) error {
 			logger.Info("Starting rate limiter cleanup task", zap.Duration("interval", 30*time.Minute))
-			ticker := time.NewTicker(30 * time.Minute)
+			ticker = time.NewTicker(30 * time.Minute)
+			stopChan = make(chan struct{})
 			go func() {
-				for range ticker.C {
-					logger.Info("Running rate limiter cleanup")
-					r.CleanupRateLimiter()
-					logger.Info("Rate limiter cleanup completed")
+				for {
+					select {
+					case <-ticker.C:
+						logger.Info("Running rate limiter cleanup")
+						r.CleanupRateLimiter()
+						logger.Info("Rate limiter cleanup completed")
+					case <-stopChan:
+						return
+					}
 				}
 			}()
 			return nil
 		},
 		OnStop: func(ctx context.Context) error {
-			r.logger.Info("Stopping rate limiter cleanup task")
+			logger.Info("Stopping rate limiter cleanup task")
+			if ticker != nil {
+				ticker.Stop()
+			}
+			if stopChan != nil {
+				close(stopChan)
+			}
 			return nil
 		},
 	})
