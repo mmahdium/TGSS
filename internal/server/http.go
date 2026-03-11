@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"strconv"
 	"tgss/internal/config"
 	"tgss/internal/handlers"
 	"tgss/internal/telegram"
@@ -19,6 +20,7 @@ type RouterParams struct {
 	GinEngine *gin.Engine
 	Logger    *zap.Logger
 	TgService *telegram.Service
+	Config    *config.Config
 
 	ChannelHandler *handlers.ChannelHandler
 	AuthHandler    *handlers.AuthHandler
@@ -65,9 +67,9 @@ func RegisterRoutes(params RouterParams) {
 				params.GinEngine.POST("/auth/password", params.AuthHandler.Password)
 			}
 
-			params.Logger.Info("Starting server")
-			go params.GinEngine.Run(":3000")
-			params.Logger.Info("Server is running on port 8080")
+			params.Logger.Info("Starting server", zap.String("host", params.Config.AppHost), zap.Int("port", params.Config.AppPort))
+			go params.GinEngine.Run(params.Config.AppHost + ":" + strconv.Itoa(params.Config.AppPort))
+			params.Logger.Info("Server is running", zap.String("address", params.Config.AppHost+":"+strconv.Itoa(params.Config.AppPort)))
 			return nil
 		},
 		OnStop: func(ctx context.Context) error {

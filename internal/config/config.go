@@ -1,6 +1,7 @@
 package config
 
 import (
+	"net"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -17,13 +18,33 @@ type Config struct {
 
 	SessionPath string
 	ProxyURL    string
+	AppHost     string
+	AppPort     int
 }
 
 func Load(logger *zap.Logger) *Config {
-	// TODO: get app port and host
 	err := godotenv.Load()
 	if err != nil {
 		logger.Warn("Error loading .env file - Using environment variables instead")
+	}
+
+	appHost := os.Getenv("APP_HOST")
+	if appHost == "" {
+		appHost = "0.0.0.0"
+		logger.Warn("No APP_HOST provided, using default", zap.String("default_host", appHost))
+	}
+	if ip := net.ParseIP(appHost); ip == nil {
+		logger.Fatal("Invalid APP_HOST format", zap.String("host", appHost))
+	}
+
+	appPortStr := os.Getenv("APP_PORT")
+	if appPortStr == "" {
+		appPortStr = "3000"
+		logger.Warn("No APP_PORT provided, using default", zap.String("default_port", appPortStr))
+	}
+	appPort, err := strconv.Atoi(strings.TrimSpace(appPortStr))
+	if err != nil || appPort < 1 || appPort > 65535 {
+		logger.Fatal("Invalid APP_PORT value, must be between 1 and 65535", zap.String("port", appPortStr))
 	}
 
 	appId := os.Getenv("TG_APP_ID")
@@ -59,5 +80,7 @@ func Load(logger *zap.Logger) *Config {
 
 		SessionPath: sessionFile,
 		ProxyURL:    strings.TrimSpace(proxyURL),
+		AppHost:     appHost,
+		AppPort:     appPort,
 	}
 }
