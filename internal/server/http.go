@@ -29,6 +29,12 @@ type RouterParams struct {
 }
 
 func NewGin(config *config.Config) *gin.Engine {
+	if config.AppEnv == "production" {
+		gin.SetMode(gin.ReleaseMode)
+	} else {
+		gin.SetMode(gin.DebugMode)
+	}
+
 	g := gin.New()
 	g.Use(gin.Recovery())
 	g.Use(cors.New(cors.Config{
@@ -36,11 +42,6 @@ func NewGin(config *config.Config) *gin.Engine {
 		AllowMethods:    []string{"GET"},
 		AllowHeaders:    []string{"Origin", "Content-Type"},
 	}))
-	if config.AppEnv == "production" {
-		gin.SetMode(gin.ReleaseMode)
-	} else {
-		gin.SetMode(gin.DebugMode)
-	}
 	return g
 }
 
