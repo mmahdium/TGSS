@@ -13,8 +13,9 @@ import (
 
 // TODO: another limiter rate for images
 type ClientLimiter struct {
-	limiter  *rate.Limiter
-	lastSeen time.Time
+	feedLimiter  *rate.Limiter
+	imageLimiter *rate.Limiter
+	lastSeen     time.Time
 }
 
 type RateLimiter struct {
@@ -27,19 +28,30 @@ func NewRateLimiter(logger *zap.Logger) *RateLimiter {
 	return &RateLimiter{logger: logger, mu: sync.Mutex{}, clients: map[string]*ClientLimiter{}}
 }
 
-func (r *RateLimiter) getLimiter(ip string) *rate.Limiter {
+func (r *RateLimiter) getLimiter(ip string, kind string) *rate.Limiter {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
 	if c, ok := r.clients[ip]; ok {
 		c.lastSeen = time.Now()
-		return c.limiter
+		if kind == "image" {
+			return c.imageLimiter
+		}
+		return c.feedLimiter
 	}
 
-	limiter := rate.NewLimiter(rate.Every(time.Second*3), 5) // TODO: get from config
-	r.clients[ip] = &ClientLimiter{limiter: limiter, lastSeen: time.Now()}
+	feedLim := rate.NewLimiter(rate.Every(3*time.Second), 5)
+	imageLim := rate.NewLimiter(rate.Every(5*time.Second), 4)
 
-	return limiter
+	r.clients[ip] = &ClientLimiter{
+		feedLimiter:  feedLim,
+		imageLimiter: imageLim,
+		lastSeen:     time.Now(),
+	}
+	if kind == "image" {
+		return imageLim
+	}
+	return feedLim
 }
 
 func (r *RateLimiter) CleanupRateLimiter() {
@@ -91,14 +103,24 @@ func RegisterRateLimiterCleanup(lc fx.Lifecycle, logger *zap.Logger, r *RateLimi
 	})
 }
 
-func (r *RateLimiter) RateLimit() gin.HandlerFunc {
+func (r *RateLimiter) FeedRateLimit() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		ip := c.ClientIP()
-
-		limiter := r.getLimiter(ip)
-
-		if !limiter.Allow() {
+		lim := r.getLimiter(ip, "feed")
+		if !lim.Allow() {
 			c.AbortWithStatusJSON(429, gin.H{"error": "Slow down pls"})
+			return
+		}
+		c.Next()
+	}
+}
+
+func (r *RateLimiter) ImageRateLimit() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		ip := c.ClientIP()
+		lim := r.getLimiter(ip, "image")
+		if !lim.Allow() {
+			c.AbortWithStatusJSON(429, gin.H{"error": "Slow down pls, these arent your mothers nudes"})
 			return
 		}
 		c.Next()

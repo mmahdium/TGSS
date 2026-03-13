@@ -20,6 +20,7 @@ type Config struct {
 	ProxyURL    string
 	AppHost     string
 	AppPort     int
+	BaseURL     string
 }
 
 func Load(logger *zap.Logger) *Config {
@@ -74,13 +75,22 @@ func Load(logger *zap.Logger) *Config {
 
 	proxyURL := os.Getenv("TG_PROXY_URL")
 
+	baseURL := os.Getenv("BASE_URL")
+	if baseURL == "" {
+		logger.Fatal("BASE_URL cant be empty")
+	}
+	if baseURL[len(baseURL)-1] == '/' {
+		baseURL = baseURL[:len(baseURL)-1]
+	}
+
 	return &Config{
-		TgAppId:       func() int { i, _ := strconv.Atoi(appId); return i }(),
-		TgAppHash:     strings.TrimSpace(appHash),
+		TgAppId:   func() int { i, _ := strconv.Atoi(appId); return i }(),
+		TgAppHash: strings.TrimSpace(appHash),
 
 		SessionPath: sessionFile,
 		ProxyURL:    strings.TrimSpace(proxyURL),
 		AppHost:     appHost,
 		AppPort:     appPort,
+		BaseURL:     baseURL,
 	}
 }

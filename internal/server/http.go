@@ -49,8 +49,8 @@ func RegisterRoutes(params RouterParams) {
 			})
 
 			params.GinEngine.GET("/feed/:id/json", params.ChannelHandler.GetMessagesJson)
-			params.GinEngine.GET("/feed/:id", params.RateLimiter.RateLimit(), params.ChannelHandler.GetMessagesRSS)
-			params.GinEngine.GET("/image/:channelId/:messageId", params.ImageHandler.GetImage)
+			params.GinEngine.GET("/feed/:id", params.RateLimiter.FeedRateLimit(), params.ChannelHandler.GetMessagesRSS)
+			params.GinEngine.GET("/image/:channelId/:messageId", params.RateLimiter.ImageRateLimit(), params.ImageHandler.GetImage)
 
 			// TODO: improve accurecy in rss channel fields
 			// TODO: add ui with templates under /setup with fetch
