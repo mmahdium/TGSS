@@ -28,7 +28,7 @@ type RouterParams struct {
 	ImageHandler   *handlers.ImageHandler
 }
 
-func NewGin() *gin.Engine {
+func NewGin(config *config.Config) *gin.Engine {
 	g := gin.New()
 	g.Use(gin.Recovery())
 	g.Use(cors.New(cors.Config{
@@ -36,6 +36,11 @@ func NewGin() *gin.Engine {
 		AllowMethods:    []string{"GET"},
 		AllowHeaders:    []string{"Origin", "Content-Type"},
 	}))
+	if config.AppEnv == "production" {
+		gin.SetMode(gin.ReleaseMode)
+	} else {
+		gin.SetMode(gin.DebugMode)
+	}
 	return g
 }
 
@@ -48,13 +53,12 @@ func RegisterRoutes(params RouterParams) {
 				})
 			})
 
-			params.GinEngine.GET("/feed/:id/json", params.ChannelHandler.GetMessagesJson)
+			// params.GinEngine.GET("/feed/:id/json", params.ChannelHandler.GetMessagesJson)
 			params.GinEngine.GET("/feed/:id", params.RateLimiter.FeedRateLimit(), params.ChannelHandler.GetMessagesRSS)
 			params.GinEngine.GET("/image/:channelId/:messageId", params.RateLimiter.ImageRateLimit(), params.ImageHandler.GetImage)
 
 			// TODO: improve accurecy in rss channel fields
 			// TODO: add ui with templates under /setup with fetch
-			// TODO: image endpoint + HMAC
 			authStatCtx, cancel := context.WithTimeout(context.Background(), config.AuthStatusTimeout)
 			authStat, err := params.TgService.AuthStatus(authStatCtx)
 			cancel()

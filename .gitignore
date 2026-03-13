@@ -2,3 +2,6 @@
 .vscode/launch.json
 main
 data/
+*.tar.xz
+buildcmd
+TGSS

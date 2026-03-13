@@ -1,8 +1,15 @@
 package infra
 
-import "go.uber.org/zap"
+import (
+	"os"
+
+	"go.uber.org/zap"
+)
 
 func NewLogger() (*zap.Logger, error) {
+	if os.Getenv("APP_ENV") == "production" {
+		return zap.NewProduction()
+	}
 	return zap.NewDevelopment()
 }
 
@@ -12,6 +19,10 @@ type FXLogger struct {
 }
 
 func NewFXLogger() *FXLogger {
+	if os.Getenv("APP_ENV") == "production" {
+		logger, _ := zap.NewProduction()
+		return &FXLogger{logger: logger}
+	}
 	logger, _ := zap.NewDevelopment()
 	return &FXLogger{logger: logger}
 }

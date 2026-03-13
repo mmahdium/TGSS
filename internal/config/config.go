@@ -16,11 +16,13 @@ type Config struct {
 	TgAppId       int
 	TgAppHash     string
 
-	SessionPath string
-	ProxyURL    string
-	AppHost     string
-	AppPort     int
-	BaseURL     string
+	SessionPath    string
+	ProxyURL       string
+	AppHost        string
+	AppPort        int
+	BaseURL        string
+	ImageSigSecret string
+	AppEnv         string
 }
 
 func Load(logger *zap.Logger) *Config {
@@ -82,6 +84,18 @@ func Load(logger *zap.Logger) *Config {
 	if baseURL[len(baseURL)-1] == '/' {
 		baseURL = baseURL[:len(baseURL)-1]
 	}
+
+	imageSigSecret := os.Getenv("IMAGE_SIGNATURE_SECRET")
+	if imageSigSecret == "" {
+		logger.Warn("IMAGE_SIGNATURE_SECRET is not set, which leaves a backlink vulnerability on images")
+		imageSigSecret = "notAsafeSecreT"
+	}
+
+	appEnv := os.Getenv("APP_ENV")
+	if appEnv == "" {
+		appEnv = "development"
+	}
+	// TODO: logging and gin
 
 	return &Config{
 		TgAppId:   func() int { i, _ := strconv.Atoi(appId); return i }(),

@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"tgss/internal/config"
 	"tgss/internal/telegram"
+	"tgss/internal/utils"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -14,17 +15,20 @@ import (
 )
 
 type ImageHandler struct {
-	logger       *zap.Logger
-	imageService *telegram.ImageService
+	logger        *zap.Logger
+	imageService  *telegram.ImageService
+	hmacGenerator *utils.ImageHMACGenerator
 }
 
 func NewImageHandler(
 	imageService *telegram.ImageService,
 	logger *zap.Logger,
+	hmacGenerator *utils.ImageHMACGenerator,
 ) *ImageHandler {
 	return &ImageHandler{
-		logger:       logger,
-		imageService: imageService,
+		logger:        logger,
+		imageService:  imageService,
+		hmacGenerator: hmacGenerator,
 	}
 }
 
@@ -43,6 +47,22 @@ func (ih *ImageHandler) GetImage(c *gin.Context) {
 	if err != nil {
 		ih.logger.Error("message Id is invalid", zap.Error(err))
 		c.JSON(400, gin.H{"error": "message Id is invalid"})
+		return
+	}
+
+	expStr := c.Query("exp")
+	sig := c.Query("sig")
+
+	expUnix, err := strconv.ParseInt(expStr, 10, 64)
+	if err != nil {
+		c.AbortWithStatus(400)
+		return
+	}
+
+	expiresAt := time.Unix(expUnix, 0)
+
+	if !ih.hmacGenerator.VerifyMAC(msgId, expiresAt, sig) {
+		c.AbortWithStatus(403)
 		return
 	}
 

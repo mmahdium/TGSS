@@ -11,7 +11,6 @@ import (
 	"golang.org/x/time/rate"
 )
 
-// TODO: another limiter rate for images
 type ClientLimiter struct {
 	feedLimiter  *rate.Limiter
 	imageLimiter *rate.Limiter

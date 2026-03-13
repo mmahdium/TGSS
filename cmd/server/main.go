@@ -7,6 +7,7 @@ import (
 	"tgss/internal/rss"
 	"tgss/internal/server"
 	"tgss/internal/telegram"
+	"tgss/internal/utils"
 
 	"go.uber.org/fx"
 )
@@ -18,6 +19,7 @@ func main() {
 			config.Load,
 			server.NewGin,
 			server.NewRateLimiter,
+			utils.NewImageHMACGenerator,
 
 			handlers.NewChannelHandler,
 			handlers.NewAuthHandler,

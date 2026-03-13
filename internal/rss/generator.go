@@ -7,6 +7,7 @@ import (
 	"net/url"
 	"strconv"
 	"tgss/internal/config"
+	"tgss/internal/utils"
 	"time"
 
 	"github.com/gotd/td/tg"
@@ -18,13 +19,17 @@ type RSSItem struct {
 	Link        string        `xml:"link"`
 	Enclosure   *RSSEnclosure `xml:"enclosure,omitempty"`
 	PubDate     string        `xml:"pubDate,omitempty"`
-	Description string        `xml:"description"`
+	Description CDATA         `xml:"description"`
 	Guid        string        `xml:"guid,omitempty"`
+}
+
+type CDATA struct {
+	Text string `xml:",cdata"`
 }
 
 type RSSEnclosure struct {
 	URL    string `xml:"url,attr"`
-	Length string `xml:"lenghth,omitempty,attr"`
+	Length string `xml:"length,omitempty,attr"`
 	Type   string `xml:"type,attr"`
 }
 
@@ -48,12 +53,13 @@ type RSSFeed struct {
 }
 
 type RSSGenerator struct {
-	logger *zap.Logger
-	config *config.Config
+	logger        *zap.Logger
+	config        *config.Config
+	hmacGenerator *utils.ImageHMACGenerator
 }
 
-func NewRSSGenerator(logger *zap.Logger, config *config.Config) *RSSGenerator {
-	return &RSSGenerator{logger: logger, config: config}
+func NewRSSGenerator(logger *zap.Logger, config *config.Config, hmacGenerator *utils.ImageHMACGenerator) *RSSGenerator {
+	return &RSSGenerator{logger: logger, config: config, hmacGenerator: hmacGenerator}
 }
 
 func (r *RSSGenerator) GenerateFeed(items []tg.MessageClass, channelId string) *RSSFeed {
@@ -130,12 +136,19 @@ func (r *RSSGenerator) messageToItem(msg tg.MessageClass, channelId string) (*RS
 		Title:       "Post by @" + channelId + " on Telegram",
 		Link:        messageURL.String(),
 		PubDate:     time.Unix(int64(message.Date), 0).Format("Mon, 02 Jan 2006 15:04 MST"),
-		Description: description,
+		Description: CDATA{Text: description},
 		Guid:        messageURL.String(),
 	}
 
 	if err = r.messageHasPhoto(message); err == nil {
-		if enclosureURL, err := url.ParseRequestURI(r.config.BaseURL + "/image/" + channelId + "/" + strconv.Itoa(msg.GetID())); err == nil {
+		enclosurePhotoExpiresAt := time.Now().Add(10 * time.Minute)
+		enclosurePhotoSignature := r.hmacGenerator.GenerateMAC(message.GetID(), enclosurePhotoExpiresAt)
+		urlParams := fmt.Sprintf(
+			"?exp=%d&sig=%s",
+			enclosurePhotoExpiresAt.Unix(),
+			enclosurePhotoSignature,
+		)
+		if enclosureURL, err := url.ParseRequestURI(r.config.BaseURL + "/image/" + channelId + "/" + strconv.Itoa(msg.GetID()) + urlParams); err == nil {
 			rssItem.Enclosure = &RSSEnclosure{
 				URL:    enclosureURL.String(),
 				Length: "0",
