@@ -127,16 +127,10 @@ func (s *Service) LastMessages(ctx context.Context, username string, limit int) 
 		return nil, err
 	}
 
-	var msgs []tg.MessageClass
-
-	switch h := history.(type) {
-	case *tg.MessagesMessages:
-		msgs = h.Messages
-	case *tg.MessagesMessagesSlice:
-		msgs = h.Messages
-	case *tg.MessagesChannelMessages:
-		msgs = h.Messages
+	msgs, ok := history.(*tg.MessagesChannelMessages)
+	if !ok {
+		return nil, errors.New("resolved messages are not from a channel")
 	}
 
-	return msgs, nil
+	return msgs.Messages, nil
 }

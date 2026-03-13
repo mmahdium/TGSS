@@ -25,6 +25,7 @@ type RouterParams struct {
 
 	ChannelHandler *handlers.ChannelHandler
 	AuthHandler    *handlers.AuthHandler
+	ImageHandler   *handlers.ImageHandler
 }
 
 func NewGin() *gin.Engine {
@@ -47,12 +48,13 @@ func RegisterRoutes(params RouterParams) {
 				})
 			})
 
-			// params.GinEngine.GET("/feed/:id/json", params.ChannelHandler.GetMessagesJson)
+			params.GinEngine.GET("/feed/:id/json", params.ChannelHandler.GetMessagesJson)
 			params.GinEngine.GET("/feed/:id", params.RateLimiter.RateLimit(), params.ChannelHandler.GetMessagesRSS)
+			params.GinEngine.GET("/image/:channelId/:messageId", params.ImageHandler.GetImage)
 
 			// TODO: improve accurecy in rss channel fields
 			// TODO: add ui with templates under /setup with fetch
-			// TODO: image endpoint + hash and expiry
+			// TODO: image endpoint + HMAC
 			authStatCtx, cancel := context.WithTimeout(context.Background(), config.AuthStatusTimeout)
 			authStat, err := params.TgService.AuthStatus(authStatCtx)
 			cancel()

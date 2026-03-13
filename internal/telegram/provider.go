@@ -90,6 +90,7 @@ var Module = fx.Options(
 	fx.Provide(
 		NewTelegramClient,
 		NewService,
+		NewImageService,
 	),
 	fx.Invoke(RunClient),
 )

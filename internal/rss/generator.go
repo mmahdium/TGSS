@@ -123,3 +123,5 @@ func (r *RSSGenerator) messageToItem(msg tg.MessageClass, channelId string) (*RS
 		Guid:        messageURL.String(),
 	}, nil
 }
+
+// TODO: add a hasPhoto helper to add the rss tag accordingly

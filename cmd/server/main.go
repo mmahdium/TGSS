@@ -21,6 +21,7 @@ func main() {
 
 			handlers.NewChannelHandler,
 			handlers.NewAuthHandler,
+			handlers.NewImageHandler,
 
 			rss.NewRSSGenerator,
 			rss.NewFeedCache,
