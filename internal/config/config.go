@@ -106,5 +106,6 @@ func Load(logger *zap.Logger) *Config {
 		AppHost:     appHost,
 		AppPort:     appPort,
 		BaseURL:     baseURL,
+		AppEnv:      appEnv,
 	}
 }
