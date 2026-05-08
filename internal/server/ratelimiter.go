@@ -40,7 +40,7 @@ func (r *RateLimiter) getLimiter(ip string, kind string) *rate.Limiter {
 	}
 
 	feedLim := rate.NewLimiter(rate.Every(3*time.Second), 5)
-	imageLim := rate.NewLimiter(rate.Every(5*time.Second), 4)
+	imageLim := rate.NewLimiter(rate.Every(5*time.Second), 4) // TODO: get from env
 
 	r.clients[ip] = &ClientLimiter{
 		feedLimiter:  feedLim,

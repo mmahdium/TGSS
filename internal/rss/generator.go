@@ -141,7 +141,7 @@ func (r *RSSGenerator) messageToItem(msg tg.MessageClass, channelId string) (*RS
 	}
 
 	if err = r.messageHasPhoto(message); err == nil {
-		enclosurePhotoExpiresAt := time.Now().Add(10 * time.Minute)
+		enclosurePhotoExpiresAt := time.Now().Add(12 * time.Hour) // TODO: get from env
 		enclosurePhotoSignature := r.hmacGenerator.GenerateMAC(message.GetID(), enclosurePhotoExpiresAt)
 		urlParams := fmt.Sprintf(
 			"?exp=%d&sig=%s",
